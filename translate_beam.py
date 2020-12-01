@@ -239,7 +239,7 @@ def main(args):
     if args.output is not None:
         with open(args.output, 'w') as out_file:
             for sent_id in range(len(all_hyps.keys())):
-            	# for taks 3:
+            	# for task 3:
             	# out_file.write(all_hyps[sent_id] + '\n')
 
             	# for task 4: iterate through n-best list
