@@ -25,7 +25,7 @@ class BeamSearch(object):
         """ Adds a beam search path that ended in EOS (= finished sentence) """
         # ensure all node paths have the same length for batch ops
         missing = self.max_len - node.length
-        node.sequence = torch.cat((node.sequence, torch.tensor([self.pad]*missing).long()))
+        node.sequence = torch.cat((node.sequence.cpu(), torch.tensor([self.pad]*missing).long()))
         self.final.put((score, next(self._counter), node))
 
     def get_current_beams(self):
@@ -36,10 +36,11 @@ class BeamSearch(object):
             nodes.append((node[0], node[2]))
         return nodes
 
-    def get_best(self):
+    def get_best(self, n_best):
         """ Returns final node with the lowest negative log probability """
         # Merge EOS paths and those that were stopped by
         # max sequence length (still in nodes)
+        # n_best: n-best translations to be returned
         merged = PriorityQueue()
         for _ in range(self.final.qsize()):
             node = self.final.get()
@@ -49,10 +50,19 @@ class BeamSearch(object):
             node = self.nodes.get()
             merged.put(node)
 
-        node = merged.get()
-        node = (node[0], node[2])
+        # for task 3:
+        # node = merged.get()
+        # node = (node[0], node[2]) 
+        # return node
 
-        return node
+        # for task 4: return n-best nodes in a list
+        n_best_list = []
+        for i in range(n_best):
+        	node = merged.get()
+        	node = (node[0], node[2])
+        	n_best_list.append(node)
+        return n_best_list
+
 
     def prune(self):
         """ Removes all nodes but the beam_size best ones (lowest neg log prob) """
@@ -83,6 +93,14 @@ class BeamSearchNode(object):
 
         self.search = search
 
-    def eval(self):
+    def eval(self, alpha, gamma, rank):
         """ Returns score of sequence up to this node """
-        return self.logp
+
+        # implement length normalization
+        lp = ((5 + self.length)**alpha) / ((5 + 1)**alpha)
+
+        # for task 3:
+        # return self.logp / lp
+
+        # for task 4: implement re-ranking
+        return self.logp / lp - gamma * rank
